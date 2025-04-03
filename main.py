@@ -121,9 +121,9 @@ def capture_audio_until_silence(silence_duration=1.0, samplerate=24000):
         
         # Main recording loop
         for iteration in range(max_iterations):
-            # Check if conversation is still running
-            if not conversation_running:
-                print("Conversation stopped, ending audio capture")
+            # Check if conversation is still running or if microphone was muted during recording
+            if not conversation_running or microphone_muted:
+                print("Conversation stopped or microphone muted, ending audio capture")
                 break
                 
             # Read audio data
@@ -474,8 +474,19 @@ async def continuous_conversation():
 
 def mute_microphone():
     """Mute the microphone input."""
-    global microphone_muted
+    global microphone_muted, stream
     microphone_muted = True
+    
+    # If there's an active stream, stop it to interrupt any ongoing recording
+    if stream and hasattr(stream, 'active') and stream.active:
+        try:
+            stream.stop()
+            stream.close()
+            stream = None
+            print("Stopped active recording due to microphone mute")
+        except Exception as e:
+            print(f"Error stopping stream on mute: {e}")
+    
     print("Microphone muted")
     return True
 
